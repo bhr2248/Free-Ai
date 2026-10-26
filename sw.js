@@ -1,4 +1,4 @@
-const CACHE = "offline-ai-v1";
+const CACHE = "offline-ai-v2";
 const HOSTS = ["cdn.jsdelivr.net", "esm.run", "fonts.googleapis.com", "fonts.gstatic.com"];
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 

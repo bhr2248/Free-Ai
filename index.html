@@ -28,9 +28,9 @@ body{background:var(--bg);color:var(--ink);font:16px/1.5 "Instrument Sans",syste
 button,select,textarea,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-header{padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;gap:10px;align-items:center;background:var(--panel);border-bottom:1px solid var(--line)}
-h1{font:500 22px/1 "Newsreader",Georgia,serif;margin:0;letter-spacing:-.01em}
-.status{font-size:13px;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+header{padding:calc(10px + env(safe-area-inset-top)) 14px 8px;display:flex;flex-wrap:wrap;gap:8px 8px;align-items:center;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font:500 22px/1 "Newsreader",Georgia,serif;margin:0;letter-spacing:-.01em;flex:1}
+.status{font-size:12.5px;color:var(--muted);flex:1 1 100%;order:9;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status.ok{color:var(--ok)} .status.err{color:var(--err)}
 .hbtn{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px}
 
@@ -50,7 +50,7 @@ details.cfg summary{cursor:pointer;font-size:14px;color:var(--muted)}
 details.cfg textarea{width:100%;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);resize:vertical;min-height:80px;font-size:16px}
 .temp{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted);margin-top:8px}
 
-.modes{display:flex;gap:8px;padding:8px 14px;overflow-x:auto;background:var(--bg);scrollbar-width:none}
+.modes{display:flex;gap:8px;padding:5px 14px;overflow-x:auto;background:var(--bg);scrollbar-width:none}
 .modes::-webkit-scrollbar{display:none}
 .chip{flex:none;padding:6px 14px;border:1px solid var(--line);border-radius:99px;background:var(--panel);cursor:pointer;font-size:14px}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -83,6 +83,17 @@ footer{padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var
 .tools{max-width:780px;margin:6px auto 0;display:flex;gap:14px;font-size:13px;color:var(--muted)}
 .tools button{background:none;border:0;padding:0;cursor:pointer;color:var(--muted);text-decoration:underline}
 
+/* Chats drawer */
+.sheet.left{justify-content:flex-start;align-items:stretch}
+.sheet .card.side{width:min(88vw,360px);max-width:none;max-height:none;height:100%;border-radius:0 18px 18px 0;align-content:start;padding-top:calc(16px + env(safe-area-inset-top))}
+.citem{border-top:1px solid var(--line);padding:8px 0;display:grid;gap:4px}
+.citem.on .ct{color:var(--accent);font-weight:600}
+.ct{background:none;border:0;text-align:left;padding:0;cursor:pointer;display:grid;gap:1px;width:100%}
+.ct b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ct small{color:var(--muted);font-size:12.5px}
+.cact{display:flex;gap:14px}
+.cact button{background:none;border:0;padding:0;font-size:12.5px;color:var(--muted);cursor:pointer;text-decoration:underline}
+.cact button.del{color:var(--err)}
 /* Library sheet */
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
 .sheet.open{display:flex}
@@ -99,9 +110,10 @@ footer{padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var
 
 <header>
   <h1>Offline AI</h1>
-  <span id="status" class="status">Choose a model to start</span>
+  <button class="hbtn" id="chatsBtn">Chats</button>
   <button class="hbtn" id="libBtn">Library</button>
   <button class="hbtn" id="modelBtn">Model</button>
+  <span id="status" class="status">Choose a model to start</span>
 </header>
 
 <section class="setup" id="setup">
@@ -119,7 +131,8 @@ footer{padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var
   </details>
 </section>
 
-<nav class="modes" id="modes" aria-label="Mode"></nav>
+<nav class="modes" id="modes" aria-label="Subject"></nav>
+<nav class="modes" id="personas" aria-label="Style"></nav>
 
 <main id="main">
   <div class="empty" id="empty">
@@ -137,6 +150,21 @@ footer{padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var
   </div>
   <div class="tools"><button id="clear">New chat</button><span id="net"></span></div>
 </footer>
+
+<div class="sheet left" id="drawer">
+  <div class="card side" role="dialog" aria-label="Chats">
+    <div class="row" style="justify-content:space-between"><h3>Chats</h3><button class="hbtn" id="drawerClose">Close</button></div>
+    <button class="btn accent" id="newChat">New chat</button>
+    <input type="text" id="chatSearch" placeholder="Search your chats">
+    <div id="chatList"></div>
+    <div class="row">
+      <button class="btn ghost" id="exportAll">Back up all</button>
+      <button class="btn ghost" id="importBtn">Restore backup</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+    <p class="note">Chats are saved on this device only. Back up now and then, because clearing your browser data deletes them.</p>
+  </div>
+</div>
 
 <div class="sheet" id="sheet">
   <div class="card" role="dialog" aria-label="Library">
@@ -163,7 +191,10 @@ const store = {
   get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
   set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 };
-let engine=null, history=store.get("oa_chat",[]), busy=false, loadedModel=null;
+let engine=null, history=[], busy=false, loadedModel=null, cur=null, persona=store.get("oa_persona","default");
+let chats=store.get("oa_chats",null);
+if(!Array.isArray(chats)){ chats=[]; const old=store.get("oa_chat",[]); if(old.length) chats.push({id:"c0",title:(old[0].content||"Old chat").slice(0,48),messages:old,mode:"general",persona:"default",updated:Date.now()}); }
+function saveChats(){ store.set("oa_chats",chats); }
 const isMobile = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && Math.min(screen.width,screen.height)<900);
 
 function setStatus(t,cls=""){ statusEl.textContent=t; statusEl.className="status "+cls; }
@@ -180,13 +211,29 @@ let mode = store.get("oa_mode","general"); if(!MODES[mode]) mode="general";
 function applyMode(m, keepPrompt){
   mode=m; store.set("oa_mode",m);
   if(!keepPrompt){ $("system").value=MODES[m].sys; $("temp").value=MODES[m].temp; $("tempv").textContent=MODES[m].temp; }
-  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c.dataset.m===m));
+  if(cur){ cur.mode=m; saveChats(); }
+  document.querySelectorAll(".chip[data-m]").forEach(c=>c.setAttribute("aria-pressed", c.dataset.m===m));
 }
 Object.entries(MODES).forEach(([k,v])=>{
   const b=document.createElement("button"); b.className="chip"; b.dataset.m=k; b.textContent=v.label;
   b.onclick=()=>applyMode(k); $("modes").appendChild(b);
 });
-applyMode(mode);
+const PERSONAS={
+  default:{label:"Default", sys:""},
+  claude :{label:"Claude style", sys:"Style: thoughtful and warm. Reason carefully, be honest about what you are unsure of, push back politely if something looks wrong, and write in clear natural prose without piling on lists."},
+  gpt    :{label:"GPT style", sys:"Style: friendly, upbeat and well organized. Give structured answers with short headings or bullets where they help, then offer one useful next step."},
+  grok   :{label:"Grok style", sys:"Style: witty, direct and a little irreverent. Skip the fluff and give blunt, honest answers with dry humor, but stay accurate and never be cruel."},
+  copilot:{label:"Copilot style", sys:"Style: concise pair programmer. Lead with the answer or the code, keep explanations to a few lines, and suggest the next small step."}
+};
+Object.entries(PERSONAS).forEach(([k,v])=>{
+  const b=document.createElement("button"); b.className="chip"; b.dataset.p=k; b.textContent=v.label;
+  b.onclick=()=>applyPersona(k); $("personas").appendChild(b);
+});
+function applyPersona(p){
+  if(!PERSONAS[p]) p="default"; persona=p; store.set("oa_persona",p);
+  if(cur){ cur.persona=p; saveChats(); }
+  document.querySelectorAll(".chip[data-p]").forEach(c=>c.setAttribute("aria-pressed", c.dataset.p===p));
+}
 
 /* ---------------- model list ---------------- */
 const PREF = ["Qwen2.5-Coder-7B-Instruct","Qwen3-8B","Qwen2.5-7B-Instruct","Llama-3.1-8B-Instruct","Qwen3-4B","Qwen2.5-Coder-3B-Instruct","Phi-3.5-mini-instruct","Llama-3.2-3B-Instruct","Qwen2.5-3B-Instruct","Qwen3-1.7B","Qwen2.5-Coder-1.5B-Instruct","Qwen2.5-1.5B-Instruct","Qwen2.5-Math-1.5B-Instruct","gemma-2-2b-it","Llama-3.2-1B-Instruct","Qwen3-0.6B","Qwen2.5-0.5B-Instruct"];
@@ -326,7 +373,7 @@ function addMsg(role,text){
   if(role==="ai"){ d.innerHTML=render(text); decorate(d); } else d.textContent=text;
   thread.appendChild(d); main.scrollTop=main.scrollHeight; return d;
 }
-function restore(){ thread.innerHTML=""; if(history.length) emptyEl.style.display="none"; history.forEach(m=>addMsg(m.role==="user"?"user":"ai",m.content)); }
+function restore(){ thread.innerHTML=""; emptyEl.style.display=history.length?"none":""; history.forEach(m=>addMsg(m.role==="user"?"user":"ai",m.content)); }
 
 /* ---------------- library (offline knowledge base) ---------------- */
 function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open("offline-ai",1); r.onupgradeneeded=()=>r.result.createObjectStore("docs",{keyPath:"id"}); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
@@ -393,10 +440,11 @@ async function send(){
   const text=input.value.trim(); if(!text||busy||!engine) return;
   busy=true; input.value=""; autosize(); sendBtn.style.display="none"; stopBtn.style.display=""; input.disabled=true; lock();
   history.push({role:"user",content:text}); addMsg("user",text);
+  if(cur.title==="New chat") cur.title=text.slice(0,48); cur.updated=Date.now(); saveChats();
   const bubble=addMsg("ai",""); bubble.classList.add("cursor");
   let acc="";
   try{
-    let sys=$("system").value;
+    let sys=(PERSONAS[persona].sys?PERSONAS[persona].sys+"\n\n":"")+$("system").value;
     if($("useLib").checked && INDEX.length){
       const hits=retrieve(text);
       if(hits.length) sys+="\n\nReference material from the user's own library. Use it when relevant and say which document it came from. If it does not contain the answer, answer from your own knowledge and say so.\n"+hits.map(h=>`[${h.name}]\n${h.text.slice(0,1000)}`).join("\n---\n");
@@ -413,7 +461,7 @@ async function send(){
     bubble.innerHTML=render(acc)+"<p style='color:var(--err)'>Stopped: "+esc(String(e.message||e))+". If this mentions memory or context, start a new chat or pick a smaller model.</p>";
   }
   bubble.classList.remove("cursor"); decorate(bubble);
-  if(acc){ history.push({role:"assistant",content:acc}); store.set("oa_chat",history.slice(-40)); }
+  if(acc){ history.push({role:"assistant",content:acc}); cur.updated=Date.now(); saveChats(); renderChatList(); }
   busy=false; unlock(); stopBtn.style.display="none"; sendBtn.style.display=""; input.disabled=false; input.focus();
 }
 function autosize(){ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,160)+"px"; }
@@ -423,7 +471,72 @@ loadBtn.onclick=loadModel; sendBtn.onclick=send;
 stopBtn.onclick=()=>{ try{ engine.interruptGenerate(); }catch(e){} };
 input.addEventListener("input",autosize);
 input.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey&&!isMobile){ e.preventDefault(); send(); } });
-$("clear").onclick=()=>{ if(busy) return; history=[]; store.set("oa_chat",[]); thread.innerHTML=""; emptyEl.style.display=""; };
+/* ---------------- saved chats ---------------- */
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+function openChat(id){
+  if(busy) return;
+  cur=chats.find(c=>c.id===id)||chats[0]; history=cur.messages;
+  store.set("oa_cur",cur.id);
+  applyMode(cur.mode||"general"); applyPersona(cur.persona||"default");
+  restore(); renderChatList();
+}
+function newChat(){
+  if(busy) return;
+  if(cur && !cur.messages.length){ closeDrawer(); input.focus(); return; }
+  const c={id:newId(),title:"New chat",messages:[],mode:cur?cur.mode:mode,persona:cur?cur.persona:persona,updated:Date.now()};
+  chats.unshift(c); saveChats(); openChat(c.id); closeDrawer();
+}
+function deleteChat(id){
+  if(busy||!confirm("Delete this chat?")) return;
+  chats=chats.filter(c=>c.id!==id);
+  if(!chats.length) chats.push({id:newId(),title:"New chat",messages:[],mode:"general",persona:"default",updated:Date.now()});
+  saveChats(); if(cur&&cur.id===id) openChat(chats[0].id); else renderChatList();
+}
+function renameChat(id){
+  const c=chats.find(x=>x.id===id); const t=prompt("Chat name",c.title);
+  if(t&&t.trim()){ c.title=t.trim().slice(0,60); saveChats(); renderChatList(); }
+}
+function download(name,text,type){
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+function exportChat(id){
+  const c=chats.find(x=>x.id===id);
+  const txt=c.title+"\n\n"+c.messages.map(m=>(m.role==="user"?"You":"AI")+":\n"+splitThink(m.content).ans).join("\n\n");
+  download(c.title.replace(/[^\w\-]+/g,"_")+".txt",txt,"text/plain");
+}
+function renderChatList(){
+  const q=$("chatSearch").value.toLowerCase().trim(); const box=$("chatList"); box.innerHTML="";
+  const list=[...chats].sort((a,b)=>b.updated-a.updated).filter(c=>!q||c.title.toLowerCase().includes(q)||c.messages.some(m=>m.content.toLowerCase().includes(q)));
+  if(!list.length){ box.innerHTML='<p class="note">No chats found.</p>'; return; }
+  list.forEach(c=>{
+    const r=document.createElement("div"); r.className="citem"+(cur&&c.id===cur.id?" on":"");
+    const t=document.createElement("button"); t.className="ct";
+    const b=document.createElement("b"); b.textContent=c.title;
+    const sm=document.createElement("small"); sm.textContent=new Date(c.updated).toLocaleDateString()+" - "+c.messages.length+" messages";
+    t.append(b,sm); t.onclick=()=>{ if(busy) return; openChat(c.id); closeDrawer(); };
+    const a=document.createElement("div"); a.className="cact";
+    [["Rename",()=>renameChat(c.id)],["Save as text",()=>exportChat(c.id)],["Delete",()=>deleteChat(c.id),"del"]].forEach(([n,f,cl])=>{
+      const x=document.createElement("button"); x.textContent=n; if(cl) x.className=cl; x.onclick=f; a.appendChild(x); });
+    r.append(t,a); box.appendChild(r);
+  });
+}
+const closeDrawer=()=>$("drawer").classList.remove("open");
+$("chatsBtn").onclick=()=>{ renderChatList(); $("drawer").classList.add("open"); };
+$("drawerClose").onclick=closeDrawer;
+$("drawer").onclick=e=>{ if(e.target.id==="drawer") closeDrawer(); };
+$("newChat").onclick=newChat; $("clear").onclick=newChat;
+$("chatSearch").oninput=renderChatList;
+$("exportAll").onclick=()=>download("offline-ai-chats-backup.json",JSON.stringify(chats),"application/json");
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=async e=>{
+  try{
+    const arr=JSON.parse(await e.target.files[0].text()); let n=0;
+    if(Array.isArray(arr)) arr.forEach(c=>{ if(c&&c.id&&Array.isArray(c.messages)&&!chats.some(x=>x.id===c.id)){ chats.push(c); n++; } });
+    saveChats(); renderChatList(); alert("Restored "+n+" chat"+(n===1?"":"s")+".");
+  }catch(err){ alert("That file is not a valid backup."); }
+  e.target.value="";
+};
 $("temp").oninput=e=>$("tempv").textContent=e.target.value;
 $("modelBtn").onclick=()=>setup.classList.toggle("hidden");
 function netState(){ $("net").textContent=navigator.onLine?"":"Offline mode"; }
@@ -437,7 +550,8 @@ if(/iPhone|iPad|iPod/i.test(navigator.userAgent)) loadnote.insertAdjacentText("b
 if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 /* ---------------- boot ---------------- */
-restore();
+if(!chats.length) chats.push({id:newId(),title:"New chat",messages:[],mode:store.get("oa_mode","general"),persona:persona,updated:Date.now()});
+openChat(store.get("oa_cur",null) && chats.some(c=>c.id===store.get("oa_cur",null)) ? store.get("oa_cur",null) : [...chats].sort((a,b)=>b.updated-a.updated)[0].id);
 (async()=>{
   const g=await gpuCheck();
   try{ buildList(g?g.f16:true); }catch(e){ console.error(e); setStatus("Could not read model list. Connect to the internet once.","err"); }
