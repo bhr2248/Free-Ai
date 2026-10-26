@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b7a85">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Offline AI</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e7edf0; --panel:#f6f9fa; --ink:#10232c; --muted:#5b6d76; --line:#cbd6db;
+  --accent:#0b7a85; --accent-ink:#fff; --user:#10232c; --user-ink:#f2f7f8; --code:#0e1d25;
+  --ok:#1b7f4b; --err:#b3392f;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0d1a20; --panel:#14262e; --ink:#e4eef1; --muted:#8aa0a9; --line:#243a44;
+    --accent:#3cc0cc; --accent-ink:#06191d; --user:#e4eef1; --user-ink:#10232c; --code:#081217; --ok:#4fd08a; --err:#ff8a80; }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif;display:flex;flex-direction:column;height:100dvh;overflow:hidden;-webkit-text-size-adjust:100%}
+button,select,textarea,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header{padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;gap:10px;align-items:center;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font:500 22px/1 "Newsreader",Georgia,serif;margin:0;letter-spacing:-.01em}
+.status{font-size:13px;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.status.ok{color:var(--ok)} .status.err{color:var(--err)}
+.hbtn{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px}
+
+.btn{padding:10px 16px;border:1px solid var(--ink);border-radius:10px;background:var(--ink);color:var(--bg);cursor:pointer;font-weight:500}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.setup{padding:12px 14px;background:var(--panel);border-bottom:1px solid var(--line);display:grid;gap:10px}
+.setup.hidden{display:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+select{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-width:0;max-width:100%;flex:1 1 240px}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.note{font-size:13px;color:var(--muted);margin:0}
+details.cfg summary{cursor:pointer;font-size:14px;color:var(--muted)}
+details.cfg textarea{width:100%;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);resize:vertical;min-height:80px;font-size:16px}
+.temp{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted);margin-top:8px}
+
+.modes{display:flex;gap:8px;padding:8px 14px;overflow-x:auto;background:var(--bg);scrollbar-width:none}
+.modes::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:6px 14px;border:1px solid var(--line);border-radius:99px;background:var(--panel);cursor:pointer;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+main{flex:1;overflow-y:auto;padding:16px 14px;-webkit-overflow-scrolling:touch}
+.thread{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.empty{max-width:780px;margin:5vh auto 0;color:var(--muted)}
+.empty h2{font:italic 400 30px/1.15 "Newsreader",Georgia,serif;color:var(--ink);margin:0 0 10px}
+.msg{max-width:94%;padding:11px 15px;border-radius:14px;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--user);color:var(--user-ink);border-bottom-right-radius:4px;white-space:pre-wrap}
+.msg.ai{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px;font-family:"Newsreader",Georgia,serif;font-size:18px;line-height:1.6;min-width:0}
+.msg.ai code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8em;background:var(--bg);padding:1px 5px;border-radius:4px}
+.msg.ai pre{background:var(--code);color:#d8eef2;padding:12px 14px;border-radius:10px;overflow-x:auto;margin:10px 0 0;font-size:14px;line-height:1.5}
+.msg.ai pre code{background:none;padding:0;color:inherit;font-size:inherit;white-space:pre}
+.msg.ai p{margin:0 0 .7em} .msg.ai p:last-child{margin:0}
+.msg.ai ul,.msg.ai ol{margin:.3em 0 .7em;padding-left:1.3em}
+.tb{display:flex;gap:6px;justify-content:flex-end;margin:4px 0 10px;font-family:"Instrument Sans",system-ui,sans-serif}
+.tb button{font-size:12.5px;padding:3px 10px;border:1px solid var(--line);background:var(--bg);border-radius:6px;cursor:pointer}
+.out{margin:0 0 10px}
+.out iframe{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
+.out pre.log{margin:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);font-size:13px;min-height:1.6em}
+details.think{font:14px/1.5 "Instrument Sans",sans-serif;color:var(--muted);margin-bottom:8px}
+.cursor::after{content:"";display:inline-block;width:8px;height:1em;background:var(--accent);margin-left:3px;vertical-align:-2px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.cursor::after{animation:none}}
+
+footer{padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line)}
+.composer{max-width:780px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+.composer textarea{flex:1;padding:11px 14px;border:1px solid var(--line);border-radius:14px;background:var(--bg);resize:none;max-height:160px;min-height:46px;line-height:1.35;font-size:16px}
+.tools{max-width:780px;margin:6px auto 0;display:flex;gap:14px;font-size:13px;color:var(--muted)}
+.tools button{background:none;border:0;padding:0;cursor:pointer;color:var(--muted);text-decoration:underline}
+
+/* Library sheet */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.sheet.open{display:flex}
+.sheet .card{background:var(--panel);width:100%;max-width:640px;max-height:88dvh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));display:grid;gap:12px}
+.card h3{font:500 22px/1.1 "Newsreader",Georgia,serif;margin:0}
+.card input[type=text],.card textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:16px}
+.card textarea{min-height:90px;resize:vertical}
+.doc{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.doc button{background:none;border:0;color:var(--err);cursor:pointer;font-size:13px}
+.switch{display:flex;gap:10px;align-items:center;font-size:15px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Offline AI</h1>
+  <span id="status" class="status">Choose a model to start</span>
+  <button class="hbtn" id="libBtn">Library</button>
+  <button class="hbtn" id="modelBtn">Model</button>
+</header>
+
+<section class="setup" id="setup">
+  <div class="row">
+    <select id="model" aria-label="Model"></select>
+    <button id="load" class="btn accent">Load model</button>
+  </div>
+  <div class="bar" id="bar"><i id="barfill"></i></div>
+  <p class="note" id="loadnote">First load downloads the model once (0.4 to 5 GB). Use Wi-Fi. After that it is stored on your device and works with no internet.</p>
+  <div class="row" id="installRow" style="display:none"><button class="btn ghost" id="installBtn">Install as app</button></div>
+  <details class="cfg">
+    <summary>Settings</summary>
+    <textarea id="system" aria-label="System prompt"></textarea>
+    <label class="temp">Creativity <input type="range" id="temp" min="0" max="1.2" step="0.1" value="0.6"> <span id="tempv">0.6</span></label>
+  </details>
+</section>
+
+<nav class="modes" id="modes" aria-label="Mode"></nav>
+
+<main id="main">
+  <div class="empty" id="empty">
+    <h2>Ask anything.</h2>
+    <p>Pick a mode above for coding, homework, math or writing. Add your own textbooks and notes in the Library and the AI will use them to answer. Everything stays on this device.</p>
+  </div>
+  <div class="thread" id="thread"></div>
+</main>
+
+<footer>
+  <div class="composer">
+    <textarea id="input" rows="1" placeholder="Load a model first" disabled></textarea>
+    <button id="send" class="btn" disabled>Send</button>
+    <button id="stop" class="btn ghost" style="display:none">Stop</button>
+  </div>
+  <div class="tools"><button id="clear">New chat</button><span id="net"></span></div>
+</footer>
+
+<div class="sheet" id="sheet">
+  <div class="card" role="dialog" aria-label="Library">
+    <div class="row" style="justify-content:space-between"><h3>Library</h3><button class="hbtn" id="libClose">Close</button></div>
+    <p class="note">Add notes, textbook chapters, class handouts, code or anything you want the AI to know. It searches them on your device and uses the best matches when it answers. Nothing is uploaded.</p>
+    <label class="switch"><input type="checkbox" id="useLib" checked> Use my library in answers</label>
+    <input type="file" id="files" multiple accept=".txt,.md,.csv,.json,.js,.ts,.py,.java,.c,.cpp,.html,.css,.tex,.rtf,text/*">
+    <input type="text" id="pasteName" placeholder="Title for pasted text (for example: Biology ch. 4)">
+    <textarea id="pasteText" placeholder="Or paste text here"></textarea>
+    <button class="btn accent" id="pasteAdd">Add pasted text</button>
+    <p class="note">PDFs and Word files cannot be read directly. Copy the text out of them and paste it above.</p>
+    <div id="docs"></div>
+  </div>
+</div>
+
+<script type="module">
+import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+
+const $ = id => document.getElementById(id);
+const statusEl=$("status"), modelSel=$("model"), loadBtn=$("load"), bar=$("bar"), fill=$("barfill"), loadnote=$("loadnote"),
+      thread=$("thread"), input=$("input"), sendBtn=$("send"), stopBtn=$("stop"), main=$("main"), emptyEl=$("empty"), setup=$("setup");
+
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+};
+let engine=null, history=store.get("oa_chat",[]), busy=false, loadedModel=null;
+const isMobile = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && Math.min(screen.width,screen.height)<900);
+
+function setStatus(t,cls=""){ statusEl.textContent=t; statusEl.className="status "+cls; }
+
+/* ---------------- modes ---------------- */
+const MODES = {
+  general :{label:"General",  temp:0.6, sys:"You are a smart, honest, concise assistant. Think carefully, give correct answers, and say so when you are unsure."},
+  coding  :{label:"Coding",   temp:0.2, sys:"You are an expert software engineer and patient coding tutor. Write correct, complete, runnable code in fenced blocks with the language tag. Briefly explain the approach, point out edge cases and likely bugs, and prefer simple readable solutions. If the request is ambiguous, state your assumption and proceed. When fixing code, show the full corrected code."},
+  homework:{label:"Homework", temp:0.4, sys:"You are a patient tutor for school subjects: math, science, history, English, languages and social studies. Give a clear, correct, complete answer first, then explain the reasoning step by step in simple language suited to a high-school student. Double-check facts and calculations. End with a one-line summary the student can remember."},
+  math    :{label:"Math",     temp:0.2, sys:"You are a careful math tutor. Solve problems step by step, showing every step, and double-check each calculation. Use plain text notation such as x^2, sqrt(x) and a/b. State the final answer clearly on its own line, and verify it by substituting back when possible."},
+  writing :{label:"Writing",  temp:0.7, sys:"You are a skilled writing coach and editor. Help with essays, outlines, thesis statements, paragraphs and citations (MLA, APA). Write in a natural, clear voice, keep the user's ideas and requirements, and offer concrete improvements."}
+};
+let mode = store.get("oa_mode","general"); if(!MODES[mode]) mode="general";
+function applyMode(m, keepPrompt){
+  mode=m; store.set("oa_mode",m);
+  if(!keepPrompt){ $("system").value=MODES[m].sys; $("temp").value=MODES[m].temp; $("tempv").textContent=MODES[m].temp; }
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c.dataset.m===m));
+}
+Object.entries(MODES).forEach(([k,v])=>{
+  const b=document.createElement("button"); b.className="chip"; b.dataset.m=k; b.textContent=v.label;
+  b.onclick=()=>applyMode(k); $("modes").appendChild(b);
+});
+applyMode(mode);
+
+/* ---------------- model list ---------------- */
+const PREF = ["Qwen2.5-Coder-7B-Instruct","Qwen3-8B","Qwen2.5-7B-Instruct","Llama-3.1-8B-Instruct","Qwen3-4B","Qwen2.5-Coder-3B-Instruct","Phi-3.5-mini-instruct","Llama-3.2-3B-Instruct","Qwen2.5-3B-Instruct","Qwen3-1.7B","Qwen2.5-Coder-1.5B-Instruct","Qwen2.5-1.5B-Instruct","Qwen2.5-Math-1.5B-Instruct","gemma-2-2b-it","Llama-3.2-1B-Instruct","Qwen3-0.6B","Qwen2.5-0.5B-Instruct"];
+const BAD = /(vision|embed|TinyLlama|Llama-2|WizardMath|Hermes|snowflake|Mistral-7B)/i;
+function buildList(f16){
+  const suf = f16 ? "q4f16_1" : "q4f32_1";
+  const list = webllm.prebuiltAppConfig.model_list.filter(m => m.model_id.endsWith(suf+"-MLC") && !BAD.test(m.model_id));
+  const base = id => id.replace(/-q4f(16|32)_1-MLC$/,"");
+  const rank = m => { const i=PREF.indexOf(base(m.model_id)); return i<0?99:i; };
+  list.sort((a,b)=> rank(a)-rank(b) || (b.vram_required_MB||0)-(a.vram_required_MB||0));
+  const label = m => {
+    const id=base(m.model_id); let t=id;
+    if(/Coder/.test(id)) t+=" (for code)"; else if(/Math/.test(id)) t+=" (for math)"; else if(/Qwen3|DeepSeek-R1/.test(id)) t+=" (thinks step by step)";
+    return t + (m.vram_required_MB ? ` - ${(m.vram_required_MB/1024).toFixed(1)} GB` : "");
+  };
+  const add=(title,arr)=>{ if(!arr.length) return; const g=document.createElement("optgroup"); g.label=title;
+    arr.forEach(m=>{const o=document.createElement("option"); o.value=m.model_id; o.textContent=label(m); g.appendChild(o);}); modelSel.appendChild(g); };
+  add("Fits most phones (under 2.5 GB)", list.filter(m=>(m.vram_required_MB||9e9)<=2500));
+  add("Laptops and desktops (bigger, smarter)", list.filter(m=>(m.vram_required_MB||9e9)>2500));
+  const has = id => list.find(m=>base(m.model_id)===id);
+  const mem = navigator.deviceMemory || 4;
+  const want = isMobile ? ["Qwen2.5-1.5B-Instruct","Qwen3-1.7B","Llama-3.2-1B-Instruct","Qwen2.5-0.5B-Instruct"]
+            : mem>=8 ? ["Qwen2.5-7B-Instruct","Qwen3-8B","Llama-3.2-3B-Instruct"] : ["Llama-3.2-3B-Instruct","Qwen2.5-3B-Instruct","Qwen2.5-1.5B-Instruct"];
+  const def = want.map(has).find(Boolean);
+  const saved = store.get("oa_model",null);
+  if(saved && list.some(m=>m.model_id===saved)) modelSel.value=saved; else if(def) modelSel.value=def.model_id;
+}
+
+/* ---------------- GPU check ---------------- */
+async function gpuCheck(){
+  if(!navigator.gpu){
+    setStatus("WebGPU not available","err"); loadBtn.disabled=true;
+    loadnote.innerHTML = isMobile
+      ? "This phone browser has no WebGPU. Use <b>Chrome on Android 12 or newer</b>, or <b>Safari on iOS 26 or newer</b>, and keep the browser updated."
+      : "This browser has no WebGPU. Use the latest <b>Chrome</b> or <b>Edge</b>.";
+    return null;
+  }
+  try{ const a=await navigator.gpu.requestAdapter(); if(!a) throw 0; return {f16:a.features.has("shader-f16")}; }
+  catch(e){ setStatus("No GPU found","err"); loadBtn.disabled=true;
+    loadnote.textContent="WebGPU is present but no GPU adapter was found. Update the browser or enable hardware acceleration."; return null; }
+}
+
+/* ---------------- loading ---------------- */
+async function loadModel(){
+  const id=modelSel.value;
+  loadBtn.disabled=modelSel.disabled=input.disabled=sendBtn.disabled=true;
+  bar.style.display="block"; fill.style.width="0%"; setStatus("Loading model...");
+  const cb=r=>{ fill.style.width=Math.round((r.progress||0)*100)+"%"; loadnote.textContent=r.text||""; };
+  try{
+    if(!engine) engine=await webllm.CreateMLCEngine(id,{initProgressCallback:cb});
+    else { engine.setInitProgressCallback(cb); await engine.reload(id); }
+    loadedModel=id; store.set("oa_model",id);
+    try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+    setStatus("Ready: "+id.replace(/-q4f(16|32)_1-MLC$/,""),"ok");
+    loadnote.textContent="Model loaded and saved on this device.";
+    input.disabled=sendBtn.disabled=false; input.placeholder="Message the AI"; 
+    setup.classList.add("hidden");
+  }catch(e){
+    console.error(e); setStatus("Failed to load","err");
+    loadnote.textContent="Could not load: "+(e&&e.message?e.message:e)+" Try a smaller model from the top of the list.";
+  }finally{
+    loadBtn.disabled=modelSel.disabled=false; setTimeout(()=>{bar.style.display="none";},600);
+  }
+}
+
+/* ---------------- rendering ---------------- */
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function inline(t){
+  return esc(t).replace(/`([^`\n]+)`/g,"<code>$1</code>").replace(/\*\*([^*\n]+)\*\*/g,"<b>$1</b>").replace(/(^|[^*])\*([^*\n]+)\*/g,"$1<i>$2</i>");
+}
+function mdText(p){
+  const lines=p.split("\n"); let out="", list=null, para=[];
+  const flushP=()=>{ if(para.length){ out+="<p>"+para.join("<br>")+"</p>"; para=[]; } };
+  const flushL=()=>{ if(list){ out+=`<${list.t}>`+list.items.map(i=>"<li>"+i+"</li>").join("")+`</${list.t}>`; list=null; } };
+  for(const ln of lines){
+    let m;
+    if((m=ln.match(/^\s*[-*]\s+(.*)/))){ flushP(); if(!list||list.t!=="ul"){flushL(); list={t:"ul",items:[]};} list.items.push(inline(m[1])); }
+    else if((m=ln.match(/^\s*\d+[.)]\s+(.*)/))){ flushP(); if(!list||list.t!=="ol"){flushL(); list={t:"ol",items:[]};} list.items.push(inline(m[1])); }
+    else if((m=ln.match(/^#{1,4}\s*(.*)/))){ flushP(); flushL(); out+="<p><b>"+inline(m[1])+"</b></p>"; }
+    else if(!ln.trim()){ flushP(); flushL(); }
+    else { flushL(); para.push(inline(ln)); }
+  }
+  flushP(); flushL(); return out;
+}
+function md(src){
+  return src.split("```").map((p,i)=>{
+    if(i%2===1){
+      const nl=p.indexOf("\n"); const lang=(nl>=0?p.slice(0,nl):"").trim().toLowerCase(); const code=nl>=0?p.slice(nl+1):p;
+      return `<pre data-lang="${esc(lang)}"><code>${esc(code.replace(/\n$/,""))}</code></pre>`;
+    }
+    return mdText(p);
+  }).join("");
+}
+function splitThink(s){
+  const m=s.match(/^\s*<think>([\s\S]*?)(<\/think>|$)/);
+  if(!m) return {think:"",ans:s,open:false};
+  return {think:m[1].trim(), ans:s.slice(m[0].length), open:m[2]!=="</think>"};
+}
+function render(s){
+  const {think,ans,open}=splitThink(s); let h="";
+  if(think||open) h+=`<details class="think" ${open?"open":""}><summary>${open?"Thinking...":"Show reasoning"}</summary>${esc(think).replace(/\n/g,"<br>")}</details>`;
+  return h+md(ans);
+}
+function decorate(bubble){
+  bubble.querySelectorAll("pre").forEach(pre=>{
+    if(pre.nextElementSibling && pre.nextElementSibling.classList.contains("tb")) return;
+    const lang=pre.dataset.lang||""; const tb=document.createElement("div"); tb.className="tb";
+    const copy=document.createElement("button"); copy.textContent="Copy";
+    copy.onclick=async()=>{ try{ await navigator.clipboard.writeText(pre.textContent); copy.textContent="Copied"; }catch(e){ copy.textContent="Press and hold to copy"; } setTimeout(()=>copy.textContent="Copy",1500); };
+    tb.appendChild(copy);
+    if(["js","javascript","html"].includes(lang)){
+      const run=document.createElement("button"); run.textContent="Run"; run.onclick=()=>runCode(pre,lang==="html"?"html":"js"); tb.appendChild(run);
+    }
+    pre.after(tb);
+  });
+}
+function runCode(pre,lang){
+  const code=pre.textContent;
+  let tb=pre.nextElementSibling, out=tb&&tb.nextElementSibling;
+  if(!out||!out.classList.contains("out")){ out=document.createElement("div"); out.className="out"; tb.after(out); }
+  out.innerHTML="";
+  const f=document.createElement("iframe"); f.setAttribute("sandbox","allow-scripts");
+  if(lang==="html"){ f.style.height="320px"; f.srcdoc=code; out.appendChild(f); return; }
+  const log=document.createElement("pre"); log.className="log"; out.appendChild(log);
+  const id=Math.random().toString(36).slice(2);
+  const onMsg=e=>{ if(e.data&&e.data.id===id) log.textContent+=e.data.line+"\n"; };
+  window.addEventListener("message",onMsg);
+  f.style.display="none";
+  const safe=code.replace(/<\/script>/gi,"<\\/script>");
+  f.srcdoc="<script>const send=l=>parent.postMessage({id:"+JSON.stringify(id)+",line:l},'*');const fmt=a=>a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' ');console.log=(...a)=>send(fmt(a));console.error=(...a)=>send('Error: '+fmt(a));window.onerror=m=>send('Error: '+m);try{"+safe+"\n}catch(e){send('Error: '+e.message)}<\/script>";
+  out.appendChild(f);
+  setTimeout(()=>{ if(!log.textContent) log.textContent="(ran with no output, use console.log to print)"; },1200);
+}
+function addMsg(role,text){
+  emptyEl.style.display="none";
+  const d=document.createElement("div"); d.className="msg "+role;
+  if(role==="ai"){ d.innerHTML=render(text); decorate(d); } else d.textContent=text;
+  thread.appendChild(d); main.scrollTop=main.scrollHeight; return d;
+}
+function restore(){ thread.innerHTML=""; if(history.length) emptyEl.style.display="none"; history.forEach(m=>addMsg(m.role==="user"?"user":"ai",m.content)); }
+
+/* ---------------- library (offline knowledge base) ---------------- */
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open("offline-ai",1); r.onupgradeneeded=()=>r.result.createObjectStore("docs",{keyPath:"id"}); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function dbAll(){ const db=await idb(); return new Promise((res,rej)=>{ const q=db.transaction("docs").objectStore("docs").getAll(); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+async function dbPut(d){ const db=await idb(); return new Promise((res,rej)=>{ const t=db.transaction("docs","readwrite"); t.objectStore("docs").put(d); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+async function dbDel(id){ const db=await idb(); return new Promise((res,rej)=>{ const t=db.transaction("docs","readwrite"); t.objectStore("docs").delete(id); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+
+const STOP=new Set("the and for are was were with that this from have has had you your can what how why when which who not but all any into out about than then them they their its our will would could should there here been being also only just more most some such over under after before".split(" "));
+const toks=s=>(s.toLowerCase().match(/[a-z0-9_]{3,}/g)||[]).filter(w=>!STOP.has(w));
+let LIB=[], INDEX=[];
+function chunkText(text){
+  const paras=text.replace(/\r/g,"").split(/\n{2,}/); const out=[]; let cur="";
+  for(let p of paras){
+    p=p.trim(); if(!p) continue;
+    while(p.length>1400){ out.push(p.slice(0,1100)); p=p.slice(1000); }
+    if((cur+"\n\n"+p).length>900 && cur){ out.push(cur); cur=p; } else cur=cur?cur+"\n\n"+p:p;
+  }
+  if(cur) out.push(cur); return out;
+}
+function rebuild(){
+  INDEX=[]; LIB.forEach(d=>d.chunks.forEach(c=>INDEX.push({name:d.name,text:c,t:toks(c)})));
+  const box=$("docs"); box.innerHTML="";
+  if(!LIB.length){ box.innerHTML='<p class="note">No documents yet.</p>'; return; }
+  LIB.forEach(d=>{
+    const r=document.createElement("div"); r.className="doc";
+    const s=document.createElement("span"); s.textContent=`${d.name} (${d.chunks.length} parts)`;
+    const b=document.createElement("button"); b.textContent="Delete";
+    b.onclick=async()=>{ try{await dbDel(d.id);}catch(e){} LIB=LIB.filter(x=>x.id!==d.id); rebuild(); };
+    r.append(s,b); box.appendChild(r);
+  });
+}
+function retrieve(q,k=3){
+  const qt=[...new Set(toks(q))]; const N=INDEX.length; if(!qt.length||!N) return [];
+  const df={}; qt.forEach(w=>df[w]=0);
+  INDEX.forEach(c=>{ const s=new Set(c.t); qt.forEach(w=>{ if(s.has(w)) df[w]++; }); });
+  INDEX.forEach(c=>{ const tf={}; c.t.forEach(w=>tf[w]=(tf[w]||0)+1);
+    c.score=qt.reduce((a,w)=>a+(tf[w]?(1+Math.log(tf[w]))*Math.log(1+N/(df[w]||1)):0),0)/Math.sqrt(c.t.length+20); });
+  return INDEX.filter(c=>c.score>0).sort((a,b)=>b.score-a.score).slice(0,k);
+}
+async function addDoc(name,text){
+  if(!text.trim()) return;
+  const d={id:Date.now()+"-"+Math.random().toString(36).slice(2,6), name, chunks:chunkText(text)};
+  try{ await dbPut(d); }catch(e){ console.error(e); }
+  LIB.push(d); rebuild();
+}
+$("libBtn").onclick=()=>$("sheet").classList.add("open");
+$("libClose").onclick=()=>$("sheet").classList.remove("open");
+$("sheet").onclick=e=>{ if(e.target.id==="sheet") $("sheet").classList.remove("open"); };
+$("files").onchange=async e=>{ for(const f of e.target.files){ try{ await addDoc(f.name, await f.text()); }catch(err){ console.error(err); } } e.target.value=""; };
+$("pasteAdd").onclick=async()=>{ const t=$("pasteText").value; await addDoc($("pasteName").value.trim()||"Pasted notes", t); $("pasteText").value=""; $("pasteName").value=""; };
+(async()=>{ try{ LIB=await dbAll(); }catch(e){} rebuild(); })();
+
+/* ---------------- chat ---------------- */
+let wl=null;
+async function lock(){ try{ wl=await navigator.wakeLock.request("screen"); }catch(e){} }
+function unlock(){ try{ wl&&wl.release(); }catch(e){} wl=null; }
+function trimmed(budget){
+  const arr=history.map(m=>m.role==="assistant"?{role:"assistant",content:splitThink(m.content).ans}:m);
+  const out=[]; let n=0;
+  for(let i=arr.length-1;i>=0;i--){ n+=arr[i].content.length; if(n>budget && out.length) break; out.unshift(arr[i]); }
+  return out;
+}
+async function send(){
+  const text=input.value.trim(); if(!text||busy||!engine) return;
+  busy=true; input.value=""; autosize(); sendBtn.style.display="none"; stopBtn.style.display=""; input.disabled=true; lock();
+  history.push({role:"user",content:text}); addMsg("user",text);
+  const bubble=addMsg("ai",""); bubble.classList.add("cursor");
+  let acc="";
+  try{
+    let sys=$("system").value;
+    if($("useLib").checked && INDEX.length){
+      const hits=retrieve(text);
+      if(hits.length) sys+="\n\nReference material from the user's own library. Use it when relevant and say which document it came from. If it does not contain the answer, answer from your own knowledge and say so.\n"+hits.map(h=>`[${h.name}]\n${h.text.slice(0,1000)}`).join("\n---\n");
+    }
+    const messages=[{role:"system",content:sys},...trimmed(isMobile?5000:9000)];
+    const stream=await engine.chat.completions.create({messages,stream:true,temperature:parseFloat($("temp").value),max_tokens:2048});
+    for await(const ch of stream){
+      const d=ch.choices[0]?.delta?.content;
+      if(d){ acc+=d; bubble.innerHTML=render(acc); main.scrollTop=main.scrollHeight; }
+    }
+    if(!acc) bubble.textContent="(no reply)";
+  }catch(e){
+    console.error(e);
+    bubble.innerHTML=render(acc)+"<p style='color:var(--err)'>Stopped: "+esc(String(e.message||e))+". If this mentions memory or context, start a new chat or pick a smaller model.</p>";
+  }
+  bubble.classList.remove("cursor"); decorate(bubble);
+  if(acc){ history.push({role:"assistant",content:acc}); store.set("oa_chat",history.slice(-40)); }
+  busy=false; unlock(); stopBtn.style.display="none"; sendBtn.style.display=""; input.disabled=false; input.focus();
+}
+function autosize(){ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,160)+"px"; }
+
+/* ---------------- events ---------------- */
+loadBtn.onclick=loadModel; sendBtn.onclick=send;
+stopBtn.onclick=()=>{ try{ engine.interruptGenerate(); }catch(e){} };
+input.addEventListener("input",autosize);
+input.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey&&!isMobile){ e.preventDefault(); send(); } });
+$("clear").onclick=()=>{ if(busy) return; history=[]; store.set("oa_chat",[]); thread.innerHTML=""; emptyEl.style.display=""; };
+$("temp").oninput=e=>$("tempv").textContent=e.target.value;
+$("modelBtn").onclick=()=>setup.classList.toggle("hidden");
+function netState(){ $("net").textContent=navigator.onLine?"":"Offline mode"; }
+addEventListener("online",netState); addEventListener("offline",netState); netState();
+
+let deferred=null;
+addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferred=e; $("installRow").style.display=""; });
+$("installBtn").onclick=async()=>{ if(deferred){ deferred.prompt(); deferred=null; $("installRow").style.display="none"; } };
+if(/iPhone|iPad|iPod/i.test(navigator.userAgent)) loadnote.insertAdjacentText("beforeend"," On iPhone: tap Share, then Add to Home Screen, to install.");
+
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+/* ---------------- boot ---------------- */
+restore();
+(async()=>{
+  const g=await gpuCheck();
+  try{ buildList(g?g.f16:true); }catch(e){ console.error(e); setStatus("Could not read model list. Connect to the internet once.","err"); }
+})();
+</script>
+</body>
+</html>
